@@ -87,20 +87,24 @@ bot.on('callback_query', (callbackQuery) => {
   bot.answerCallbackQuery(callbackQuery.id);
 });
 
-// Обработка загрузки изображения от пользователя
-bot.on('photo', async (msg) => {
+// Обработка загрузки изображения от пользователя (включая пересланные изображения)
+bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  const fileId = msg.photo[msg.photo.length - 1].file_id;
-  const filePath = await bot.getFileLink(fileId);
 
-  bot.sendMessage(chatId, "Сохранить изображение?", {
-    reply_markup: {
-      inline_keyboard: [[
-        { text: "Да", callback_data: `saveImage:${fileId}:${chatId}` },
-        { text: "Нет", callback_data: "cancel" }
-      ]]
-    }
-  });
+  // Проверяем, является ли сообщение изображением
+  if (msg.photo) {
+    const fileId = msg.photo[msg.photo.length - 1].file_id;
+
+    // Предлагаем сохранить изображение
+    bot.sendMessage(chatId, "Сохранить изображение?", {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "Да", callback_data: `saveImage:${fileId}:${chatId}` },
+          { text: "Нет", callback_data: "cancel" }
+        ]]
+      }
+    });
+  }
 });
 
 // Обработка нажатия кнопки для сохранения изображения
