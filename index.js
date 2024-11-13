@@ -3,6 +3,7 @@ const express = require('express');
 const fs = require('fs');
 const sharp = require('sharp');
 const path = require('path');
+const axios = require('axios');
 
 const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
 const bot = new TelegramBot(token, { polling: false });
@@ -74,19 +75,6 @@ function sendImagesPage(chatId, page) {
   });
 }
 
-// Обработка нажатия кнопок для просмотра страницы или изображения
-bot.on('callback_query', (callbackQuery) => {
-  const [action, index, chatId] = callbackQuery.data.split(':');
-  if (action === 'page') {
-    sendImagesPage(callbackQuery.message.chat.id, parseInt(index));
-  } else if (action === 'showImage') {
-    const originalFiles = fs.readdirSync(IMG_DIR);
-    const filePath = path.join(IMG_DIR, originalFiles[parseInt(index)]);
-    bot.sendPhoto(chatId, filePath);
-  }
-  bot.answerCallbackQuery(callbackQuery.id);
-});
-
 // Обработка загрузки изображения от пользователя (включая пересланные изображения)
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
@@ -99,7 +87,7 @@ bot.on('message', async (msg) => {
     bot.sendMessage(chatId, "Сохранить изображение?", {
       reply_markup: {
         inline_keyboard: [[
-          { text: "Да", callback_data: `saveImage:${fileId}` },
+          { text: "Да", callback_data: `save_${fileId}` }, // упрощенная строка
           { text: "Нет", callback_data: "cancel" }
         ]]
       }
@@ -109,10 +97,12 @@ bot.on('message', async (msg) => {
 
 // Обработка нажатия кнопок
 bot.on('callback_query', async (callbackQuery) => {
-  const [action, fileId] = callbackQuery.data.split(':');
+  const callbackData = callbackQuery.data;
+  console.log("Получен callbackData:", callbackData); // Логируем для отладки
   const chatId = callbackQuery.message.chat.id;
 
-  if (action === 'saveImage') {
+  if (callbackData.startsWith('save_')) {
+    const fileId = callbackData.split('_')[1];
     try {
       // Получение URL изображения
       const file = await bot.getFile(fileId);
@@ -127,7 +117,7 @@ bot.on('callback_query', async (callbackQuery) => {
       bot.sendMessage(chatId, "Не удалось сохранить изображение.");
       console.error("Ошибка при сохранении изображения:", error);
     }
-  } else if (action === 'cancel') {
+  } else if (callbackData === 'cancel') {
     bot.sendMessage(chatId, "Изображение не сохранено.");
   }
 
@@ -135,20 +125,40 @@ bot.on('callback_query', async (callbackQuery) => {
   bot.answerCallbackQuery(callbackQuery.id);
 });
 
-// Функция для сохранения и сжатия изображения
-async function saveImage(fileId, chatId) {
-  const file = await bot.getFile(fileId);
-  const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
-  const filePath = path.join(IMG_DIR, path.basename(file.file_path));
-  const compressedFilePath = path.join(COMPRESSED_IMG_DIR, path.basename(file.file_path));
+// Функция для загрузки и сохранения изображения на сервер
+async function saveImageToServer(fileUrl) {
+  try {
+    // Загружаем изображение с помощью axios
+    const response = await axios({
+      url: fileUrl,
+      method: 'GET',
+      responseType: 'stream'
+    });
 
-  // Скачивание и сохранение не сжатого изображения
-  const response = await fetch(fileUrl);
-  const buffer = await response.buffer();
-  fs.writeFileSync(filePath, buffer);
+    // Определяем имя файла (например, по дате и времени) и пути для сохранения
+    const fileName = `image_${Date.now()}.jpg`;
+    const filePath = path.resolve(__dirname, './public/img', fileName);
+    const compressedFilePath = path.resolve(__dirname, './public/img/ziped', fileName);
 
-  // Сжатие и сохранение сжатой версии изображения
-  sharp(buffer).resize(500).toFile(compressedFilePath);
+    // Сохраняем оригинальное изображение
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
+
+    // Дожидаемся завершения записи оригинального изображения
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+
+    // Создаем сжатую версию с помощью sharp и сохраняем её
+    await sharp(filePath)
+      .resize({ width: 800 }) // Изменяем размер (например, ширина 800 пикселей, подстраивается высота)
+      .toFile(compressedFilePath);
+
+    console.log('Изображение успешно сохранено и сжато');
+  } catch (error) {
+    console.error('Ошибка при загрузке или сохранении изображения:', error);
+  }
 }
 
 // Запуск сервера
