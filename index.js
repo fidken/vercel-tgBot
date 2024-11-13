@@ -58,10 +58,10 @@ function sendImagesPage(chatId, page) {
 
   const navigationButtons = [];
   if (page > 0) {
-    navigationButtons.push({ text: '⬅️ Назад', callback_data: `page_${page - 1}` });
+    navigationButtons.push({ text: 'Назад', callback_data: `page_${page - 1}` });
   }
   if (getImagesFromDir(COMPRESSED_IMG_DIR).length > start + ITEMS_PER_PAGE) {
-    navigationButtons.push({ text: 'Вперёд ➡️', callback_data: `page_${page + 1}` });
+    navigationButtons.push({ text: 'Вперёд', callback_data: `page_${page + 1}` });
   }
   buttons.push(navigationButtons);
 
