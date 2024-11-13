@@ -11,6 +11,9 @@ const bot = new TelegramBot(token, { polling: true });
 const app = express();
 app.use(express.json());
 
+// Хранилище для временного хранения fileId для каждого пользователя
+const imageMemory = {};
+
 app.post(`/bot${token}`, (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
@@ -22,6 +25,9 @@ bot.on('message', async (msg) => {
   // Проверяем, является ли сообщение изображением
   if (msg.photo) {
     const fileId = msg.photo[msg.photo.length - 1].file_id;
+
+    // Сохраняем fileId в памяти, связанный с chatId
+    imageMemory[chatId] = fileId;
 
     // Отправляем сообщение с inline кнопками
     bot.sendMessage(chatId, "Сохранить изображение?", {
@@ -43,19 +49,31 @@ bot.on('callback_query', async (callbackQuery) => {
 
   if (callbackData === 'save') {
     try {
-      const fileId = callbackQuery.message.reply_to_message.photo.pop().file_id;
-      const file = await bot.getFile(fileId);
-      const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+      // Извлекаем fileId из памяти
+      const fileId = imageMemory[chatId];
 
-      // Сохраняем изображение на сервере
-      await saveImageToServer(fileUrl);
-      bot.sendMessage(chatId, "Изображение сохранено!");
+      if (fileId) {
+        const file = await bot.getFile(fileId);
+        const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+
+        // Сохраняем изображение на сервере
+        await saveImageToServer(fileUrl);
+        bot.sendMessage(chatId, "Изображение сохранено!");
+
+        // Удаляем fileId из памяти после сохранения
+        delete imageMemory[chatId];
+      } else {
+        bot.sendMessage(chatId, "Изображение не найдено в памяти.");
+      }
     } catch (error) {
       bot.sendMessage(chatId, "Не удалось сохранить изображение.");
       console.error("Ошибка при сохранении изображения:", error);
     }
   } else if (callbackData === 'cancel') {
     bot.sendMessage(chatId, "Изображение не сохранено.");
+
+    // Удаляем fileId из памяти при отмене
+    delete imageMemory[chatId];
   }
 
   bot.answerCallbackQuery(callbackQuery.id).catch(err => console.error("Ошибка при ответе на callback:", err));
