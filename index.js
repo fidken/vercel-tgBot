@@ -1,8 +1,10 @@
 const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+
 const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
 const bot = new TelegramBot(token, { polling: true });
 
@@ -76,7 +78,6 @@ async function saveImageToServer(fileUrl) {
     .resize({ width: 800 })
     .toFile(compressedFilePath);
 }
-
 
 // Запуск сервера
 const PORT = process.env.PORT || 3000;
