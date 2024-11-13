@@ -1,20 +1,10 @@
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
-
 const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
 const bot = new TelegramBot(token, { polling: true });
-
-const app = express();
-app.use(express.json());
-
-app.post(`/bot${token}`, (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
@@ -23,34 +13,32 @@ bot.on('message', async (msg) => {
   if (msg.photo) {
     const fileId = msg.photo[msg.photo.length - 1].file_id;
 
-    // Предлагаем сохранить изображение
+    // Отправляем сообщение с inline кнопками
     bot.sendMessage(chatId, "Сохранить изображение?", {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: "Да", callback_data: `save_${fileId}` },
+            { text: "Да", callback_data: `save` },
             { text: "Нет", callback_data: "cancel" }
           ]
         ]
       }
-    });
+    }).catch(err => console.error("Ошибка при отправке сообщения:", err));
   }
 });
 
 bot.on('callback_query', async (callbackQuery) => {
-  const callbackData = callbackQuery.data;
   const chatId = callbackQuery.message.chat.id;
+  const callbackData = callbackQuery.data;
 
-  if (callbackData.startsWith('save_')) {
-    const fileId = callbackData.split('_')[1];
+  if (callbackData === 'save') {
     try {
-      // Получение URL изображения
+      const fileId = callbackQuery.message.reply_to_message.photo.pop().file_id;
       const file = await bot.getFile(fileId);
       const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
 
-      // Загрузка и сохранение изображения
+      // Сохраняем изображение на сервере
       await saveImageToServer(fileUrl);
-
       bot.sendMessage(chatId, "Изображение сохранено!");
     } catch (error) {
       bot.sendMessage(chatId, "Не удалось сохранить изображение.");
@@ -60,7 +48,7 @@ bot.on('callback_query', async (callbackQuery) => {
     bot.sendMessage(chatId, "Изображение не сохранено.");
   }
 
-  bot.answerCallbackQuery(callbackQuery.id);
+  bot.answerCallbackQuery(callbackQuery.id).catch(err => console.error("Ошибка при ответе на callback:", err));
 });
 
 async function saveImageToServer(fileUrl) {
@@ -88,6 +76,7 @@ async function saveImageToServer(fileUrl) {
     .resize({ width: 800 })
     .toFile(compressedFilePath);
 }
+
 
 // Запуск сервера
 const PORT = process.env.PORT || 3000;
