@@ -1,11 +1,8 @@
-// Импортируем библиотеку
+// Импортируем библиотеки
 const TelegramBot = require('node-telegram-bot-api');
-
-// Вставьте свой токен, который вы получили от BotFather
-
 const express = require('express');
 
-
+// Ваш токен, полученный от BotFather
 const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
 const bot = new TelegramBot(token, { polling: false });
 
@@ -13,7 +10,7 @@ const app = express();
 app.use(express.json());
 
 // Установка вебхука
-const URL = 'https://hirata.vercel.app/';
+const URL = 'https://hirata.vercel.app';
 bot.setWebHook(`${URL}/bot${token}`);
 
 // Эндпоинт для обработки запросов от Telegram
@@ -22,18 +19,18 @@ app.post(`/bot${token}`, (req, res) => {
   res.sendStatus(200);
 });
 
-// Пример обработки команды /start
+// Обработка команды /start
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, 'Привет! Я твой Telegram-бот, работающий на вебхуках.');
 });
 
-// Пример обработки текстовых сообщений
+// Обработка текстовых сообщений
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (text.toLowerCase() === 'привет') {
+  if (text && text.toLowerCase() === 'привет') {
     bot.sendMessage(chatId, 'Привет! Как дела?');
   } else {
     bot.sendMessage(chatId, `Вы написали: "${text}". Я пока учусь отвечать на сообщения!`);
