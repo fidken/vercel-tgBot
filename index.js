@@ -8,6 +8,14 @@ const sharp = require('sharp');
 const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
 const bot = new TelegramBot(token, { polling: true });
 
+const app = express();
+app.use(express.json());
+
+app.post(`/bot${token}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
