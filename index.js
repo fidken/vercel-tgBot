@@ -36,10 +36,15 @@ bot.onText(/\/getimg/, (msg) => {
   sendImagesPage(chatId, 0);
 });
 
-// Функция для отправки страницы изображений
+function getImagesFromDir(dir) {
+  return fs.readdirSync(dir).filter(file => !file.startsWith('.'));
+}
+
+// Обновите функции, использующие чтение файлов в папках с этой функцией
+// Например, в функции sendImagesPage:
 function sendImagesPage(chatId, page) {
   const start = page * ITEMS_PER_PAGE;
-  const files = fs.readdirSync(COMPRESSED_IMG_DIR).slice(start, start + ITEMS_PER_PAGE);
+  const files = getImagesFromDir(COMPRESSED_IMG_DIR).slice(start, start + ITEMS_PER_PAGE);
   if (files.length === 0) {
     bot.sendMessage(chatId, "Изображений больше нет.");
     return;
@@ -54,7 +59,7 @@ function sendImagesPage(chatId, page) {
   if (page > 0) {
     navigationButtons.push({ text: '⬅️ Назад', callback_data: `page:${page - 1}:${chatId}` });
   }
-  if (fs.readdirSync(COMPRESSED_IMG_DIR).length > start + ITEMS_PER_PAGE) {
+  if (getImagesFromDir(COMPRESSED_IMG_DIR).length > start + ITEMS_PER_PAGE) {
     navigationButtons.push({ text: 'Вперёд ➡️', callback_data: `page:${page + 1}:${chatId}` });
   }
   buttons.push(navigationButtons);
