@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 
 // Установка вебхука
-const URL = 'https://hirata.vercel.app';
+const URL = 'https://185.16.137.39';
 bot.setWebHook(`${URL}/bot${token}`);
 
 // Эндпоинт для обработки запросов от Telegram
