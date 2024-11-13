@@ -30,7 +30,7 @@ const ITEMS_PER_PAGE = 10;
 let userPage = {}; // Хранение текущей страницы для каждого пользователя
 
 // Обработка команды /getImg для выдачи изображений
-bot.onText(/\/getImg/, (msg) => {
+bot.onText(/\/getimg/, (msg) => {
   const chatId = msg.chat.id;
   userPage[chatId] = 0;
   sendImagesPage(chatId, 0);
