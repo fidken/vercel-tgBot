@@ -10,8 +10,13 @@ const app = express();
 app.use(express.json());
 
 // Установка вебхука
-const URL = 'https://185.16.137.39';
+const URL = 'https://vercel-tgBot.up.railway.app';
+;
 bot.setWebHook(`${URL}/bot${token}`);
+
+app.get("/", (req, res) => {
+  res.send("Работает")
+})
 
 // Эндпоинт для обработки запросов от Telegram
 app.post(`/bot${token}`, (req, res) => {
