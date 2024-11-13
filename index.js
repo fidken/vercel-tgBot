@@ -99,7 +99,7 @@ bot.on('message', async (msg) => {
     bot.sendMessage(chatId, "Сохранить изображение?", {
       reply_markup: {
         inline_keyboard: [[
-          { text: "Да", callback_data: `saveImage:${fileId}:${chatId}` },
+          { text: "Да", callback_data: `saveImage:${fileId}` },
           { text: "Нет", callback_data: "cancel" }
         ]]
       }
@@ -107,15 +107,32 @@ bot.on('message', async (msg) => {
   }
 });
 
-// Обработка нажатия кнопки для сохранения изображения
+// Обработка нажатия кнопок
 bot.on('callback_query', async (callbackQuery) => {
-  const [action, fileId, chatId] = callbackQuery.data.split(':');
+  const [action, fileId] = callbackQuery.data.split(':');
+  const chatId = callbackQuery.message.chat.id;
+
   if (action === 'saveImage') {
-    saveImage(fileId, chatId);
-    bot.answerCallbackQuery(callbackQuery.id, { text: "Изображение сохранено!" });
+    try {
+      // Получение URL изображения
+      const file = await bot.getFile(fileId);
+      const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+
+      // Загрузка и сохранение изображения (подробнее в следующих шагах)
+      await saveImageToServer(fileUrl);
+
+      // Подтверждение сохранения
+      bot.sendMessage(chatId, "Изображение сохранено!");
+    } catch (error) {
+      bot.sendMessage(chatId, "Не удалось сохранить изображение.");
+      console.error("Ошибка при сохранении изображения:", error);
+    }
   } else if (action === 'cancel') {
-    bot.answerCallbackQuery(callbackQuery.id, { text: "Сохранение отменено." });
+    bot.sendMessage(chatId, "Изображение не сохранено.");
   }
+
+  // Закрываем callback_query, чтобы Telegram не показывал часики
+  bot.answerCallbackQuery(callbackQuery.id);
 });
 
 // Функция для сохранения и сжатия изображения
