@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-const token = 'your-telegram-bot-token';
+const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
 const bot = new TelegramBot(token, { polling: true });
 
 const app = express();

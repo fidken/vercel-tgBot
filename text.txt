@@ -1,0 +1,2 @@
+const token = '6722240405:AAE2BH2G_r4R615I7fBOSHkWo6_QF_JI5DU';
+const URL = 'https://vercel-tgBot.up.railway.app';
